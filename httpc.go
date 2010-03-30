@@ -4,10 +4,13 @@
 // same features. In addition, it automates connection pooling, global and
 // per-domain connection limits, request priorities, caching, etags, and more.
 //
+// The global "connection" limit actually limits pending requests. An idle
+// connection with no outstanding requests does not count toward this limit.
+//
 // Because of buggy proxies and servers (especially IIS), this library does not
 // pipeline requests.
 //
-// For example,
+// A simple example:
 //
 //   resp, err := httpc.Get(nil, "http://example.com/")
 package httpc
@@ -29,6 +32,7 @@ const (
 	DefaultLimitPerDomain = 6
 )
 
+// Used for requests made by Get, Put, Post, PostParams, and Delete.
 const DefaultPri = 5000
 
 const DefaultMemCacheSize = 50000000 // 50MB
@@ -38,6 +42,7 @@ var (
 	DefaultSender = NewMemCache(DefaultMemCacheSize, DefaultClient)
 )
 
+// Much like http.Get. If s is nil, uses DefaultSender.
 func Get(s Sender, url string) (r *Response, err os.Error) {
 	if s == nil {
 		s = DefaultSender

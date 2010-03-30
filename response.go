@@ -8,7 +8,7 @@ import (
 
 type Response struct {
 	*http.Response
-	Prev *Response
+	From *Response // The redirecting response, if any.
 	Body io.ReadCloser
 }
 
@@ -32,7 +32,7 @@ func (b body) Close() os.Error {
 
 func (r *Response) wrap(wrapper *Response, err os.Error) (*Response, os.Error) {
 	if wrapper != nil {
-		wrapper.Prev = r
+		wrapper.From = r
 	}
 	return wrapper, err
 }
