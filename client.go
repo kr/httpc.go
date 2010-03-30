@@ -42,7 +42,7 @@ func (c *Client) managePools(poolMaker func(string) *pool) {
 func (c *Client) accept() {
 	for {
 		r := <-c.reqs
-		d := r.Domain()
+		d := r.Request.URL.Host
 		p := c.getPool(d)
 		p.reqs <- r
 	}
