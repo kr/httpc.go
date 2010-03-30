@@ -4,7 +4,6 @@ import (
 	"container/heap"
 	"fmt"
 	"http"
-	"io"
 	"os"
 )
 
@@ -87,7 +86,7 @@ func (c *client) drive(incReq, decReq chan *pool) {
 	}
 }
 
-func NewClient() *client {
+func NewClient() Sender {
 	c := &client{DefaultLimitGlobal, DefaultLimitPerDomain, make(chan *Request), make(chan poolPromise)}
 	incReq := make(chan *pool)
 	decReq := make(chan *pool)
@@ -113,38 +112,3 @@ func (c *client) Send(req *Request) (resp *Response, err os.Error) {
 }
 
 func shouldRedirect(status int) bool { return false }
-
-func (c *client) Get(url string) (r *Response, err os.Error) {
-	for redirect := 0; ; redirect++ {
-		if redirect >= 10 {
-			err = os.ErrorString("stopped after 10 redirects")
-			break
-		}
-
-		var req Request
-		req.success = make(chan *Response)
-		req.failure = make(chan os.Error)
-		req.Request.RawURL = url
-		req.Pri = DefaultPri
-		if r, err = r.wrap(c.Send(&req)); err != nil {
-			break
-		}
-		if shouldRedirect(r.Response.StatusCode) {
-			r.Response.Body.Close()
-			if url = r.GetHeader("Location"); url == "" {
-				err = os.ErrorString(fmt.Sprintf("%d response missing Location header", r.Response.StatusCode))
-				break
-			}
-			continue
-		}
-
-		return
-	}
-
-	err = &http.URLError{"Get", url, err}
-	return
-}
-
-func (c *client) Put(url string, bodyType string, body io.Reader) (r *Response, err os.Error) {
-	return
-}

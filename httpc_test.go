@@ -34,7 +34,7 @@ func TestGet(t *testing.T) {
 	if c == nil {
 		t.Fatal("nil conn")
 	}
-	resp, err := c.Get("http://localhost:" + port + "/")
+	resp, err := Get(c, "http://localhost:"+port+"/")
 	if err != nil {
 		t.Error("unexpedted err", err)
 	}
