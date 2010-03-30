@@ -24,12 +24,13 @@ type pool struct {
 }
 
 func (p *pool) exec(r *Request) (resp *Response, err os.Error) {
+	conns := p.conns
 	for {
-		conn := <-p.conns
+		conn := <-conns
 		if conn == nil {
 			conn, err = dial(p.addr)
 			if err != nil {
-				p.conns <- nil
+				conns <- nil
 				return
 			}
 		}
@@ -37,7 +38,7 @@ func (p *pool) exec(r *Request) (resp *Response, err os.Error) {
 		err = conn.Write(&r.Request)
 		if err != nil {
 			conn.Close()
-			p.conns <- nil
+			conns <- nil
 			if perr, ok := err.(*http.ProtocolError); ok && perr == http.ErrPersistEOF {
 				continue
 			} else if err == io.ErrUnexpectedEOF {
@@ -50,7 +51,7 @@ func (p *pool) exec(r *Request) (resp *Response, err os.Error) {
 		x, err := conn.Read()
 		if err != nil {
 			conn.Close()
-			p.conns <- nil
+			conns <- nil
 			if perr, ok := err.(*http.ProtocolError); ok && perr == http.ErrPersistEOF {
 				continue
 			} else if err == io.ErrUnexpectedEOF {
@@ -66,7 +67,7 @@ func (p *pool) exec(r *Request) (resp *Response, err os.Error) {
 		// When the user is done reading the response, put this conn back into the pool.
 		go func() {
 			<-done
-			p.conns <- conn
+			conns <- conn
 		}()
 
 		return
@@ -107,16 +108,21 @@ func newPool(addr string, limit int, incReq, decReq chan<- *pool) *pool {
 		pos:     -1,
 		reqs:    make(chan *Request),
 		execute: make(chan bool),
-		conns:   make(chan *http.ClientConn, limit),
 	}
 
-	for i := 0; i < limit; i++ {
-		p.conns <- nil
-	}
+	p.setLimit(limit)
 
 	go p.accept(incReq, decReq)
 
 	return p
+}
+
+func (p *pool) setLimit(limit int) {
+	conns := make(chan *http.ClientConn, limit)
+	for i := 0; i < limit; i++ {
+		conns <- nil
+	}
+	p.conns = conns
 }
 
 func (p *pool) Ready() bool { return false }

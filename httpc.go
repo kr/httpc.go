@@ -33,11 +33,14 @@ const DefaultPri = 5000
 
 const DefaultMemCacheSize = 50000000 // 50MB
 
-var DefaultClient = NewMemCache(DefaultMemCacheSize, NewClient())
+var (
+	DefaultClient = NewClient()
+	DefaultSender = NewMemCache(DefaultMemCacheSize, DefaultClient)
+)
 
 func Get(s Sender, url string) (r *Response, err os.Error) {
 	if s == nil {
-		s = DefaultClient
+		s = DefaultSender
 	}
 
 	for redirect := 0; ; redirect++ {
