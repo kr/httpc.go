@@ -9,7 +9,7 @@
 //
 // For example,
 //
-//   resp, err := httpc.Get("http://example.com/")
+//   resp, err := httpc.Get(nil, "http://example.com/")
 package httpc
 
 import (
@@ -31,7 +31,9 @@ const (
 
 const DefaultPri = 5000
 
-var DefaultClient = NewClient()
+const DefaultMemCacheSize = 50000000 // 50MB
+
+var DefaultClient = NewMemCache(DefaultMemCacheSize, NewClient())
 
 func Get(s Sender, url string) (r *Response, err os.Error) {
 	if s == nil {
