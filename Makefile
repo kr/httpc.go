@@ -8,6 +8,7 @@ GOFILES=\
 	conn.go\
 	pool.go\
 	request.go\
-	response.go\
+	store_file.go\
+	store_memory.go\
 
 include $(GOROOT)/src/Make.pkg

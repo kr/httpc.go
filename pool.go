@@ -23,7 +23,7 @@ type pool struct {
 	active  int
 }
 
-func (p *pool) exec(r *Request) (resp *Response, err os.Error) {
+func (p *pool) exec(r *Request) (resp *http.Response, err os.Error) {
 	conns := p.conns
 	for {
 		conn := <-conns
@@ -62,7 +62,8 @@ func (p *pool) exec(r *Request) (resp *Response, err os.Error) {
 		}
 
 		done := make(chan bool)
-		resp = &Response{Response: x, Body: body{x.Body, done}}
+		x.Body = body{x.Body, done}
+		resp = x
 
 		// When the user is done reading the response, put this conn back into the pool.
 		go func() {
@@ -126,6 +127,24 @@ func (p *pool) setLimit(limit int) {
 }
 
 func (p *pool) Ready() bool { return false }
+
+type body struct {
+	rc   io.ReadCloser
+	done chan bool
+}
+
+func (b body) Read(p []byte) (n int, err os.Error) {
+	n, err = b.rc.Read(p)
+	if err == os.EOF {
+		close(b.done)
+	}
+	return
+}
+
+func (b body) Close() os.Error {
+	defer close(b.done)
+	return b.rc.Close()
+}
 
 type poolQueue struct {
 	vector.Vector

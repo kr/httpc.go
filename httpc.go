@@ -24,7 +24,7 @@ import (
 
 // This interface is for sending HTTP requests.
 type Sender interface {
-	Send(*Request) (*Response, os.Error)
+	Send(*Request) (*http.Response, os.Error)
 }
 
 const (
@@ -35,15 +35,23 @@ const (
 // Used for requests made by Get, Put, Post, PostParams, and Delete.
 const DefaultPri = 5000
 
-const DefaultMemCacheSize = 50000000 // 50MB
+const DefaultMemoryStoreSize = 50000000 // 50MB
 
 var (
 	DefaultClient = NewClient()
-	DefaultSender = NewMemCache(DefaultMemCacheSize, DefaultClient)
+	DefaultStore = NewMemoryStore(DefaultMemoryStoreSize)
+	DefaultSender = NewCache(DefaultStore, DefaultClient)
 )
 
+func prepend(r *http.Response, rs []*http.Response) []*http.Response {
+	nrs := make([]*http.Response, len(rs) + 1)
+	nrs[0] = r
+	copy(nrs[1:], rs)
+	return nrs
+}
+
 // Much like http.Get. If s is nil, uses DefaultSender.
-func Get(s Sender, url string) (r *Response, err os.Error) {
+func Get(s Sender, url string) (rs []*http.Response, err os.Error) {
 	if s == nil {
 		s = DefaultSender
 	}
@@ -55,17 +63,19 @@ func Get(s Sender, url string) (r *Response, err os.Error) {
 		}
 
 		var req Request
-		req.success = make(chan *Response)
+		req.success = make(chan *http.Response)
 		req.failure = make(chan os.Error)
 		req.Request.RawURL = url
 		req.Pri = DefaultPri
-		if r, err = r.wrap(s.Send(&req)); err != nil {
+		r, err := s.Send(&req)
+		if err != nil {
 			break
 		}
-		if shouldRedirect(r.Response.StatusCode) {
-			r.Response.Body.Close()
+		rs = prepend(r, rs)
+		if shouldRedirect(r.StatusCode) {
+			r.Body.Close()
 			if url = r.GetHeader("Location"); url == "" {
-				err = os.ErrorString(fmt.Sprintf("%d response missing Location header", r.Response.StatusCode))
+				err = os.ErrorString(fmt.Sprintf("%d response missing Location header", r.StatusCode))
 				break
 			}
 			continue
@@ -78,18 +88,18 @@ func Get(s Sender, url string) (r *Response, err os.Error) {
 	return
 }
 
-func Post(s Sender, url string, bodyType string, body io.Reader) (r *Response, err os.Error) {
+func Post(s Sender, url string, bodyType string, body io.Reader) (r *http.Response, err os.Error) {
 	return
 }
 
-func PostParams(s Sender, url string, params map[string]string) (r *Response, err os.Error) {
+func PostParams(s Sender, url string, params map[string]string) (r *http.Response, err os.Error) {
 	return
 }
 
-func Put(s Sender, url string, bodyType string, body io.Reader) (r *Response, err os.Error) {
+func Put(s Sender, url string, bodyType string, body io.Reader) (r *http.Response, err os.Error) {
 	return
 }
 
-func Delete(s Sender, url string) (r *Response, err os.Error) {
+func Delete(s Sender, url string) (r *http.Response, err os.Error) {
 	return
 }

@@ -101,7 +101,7 @@ func (c *Client) SetLimit(domain string, limit int) {
 	c.getPool(domain).setLimit(limit)
 }
 
-func (c *Client) Send(req *Request) (resp *Response, err os.Error) {
+func (c *Client) Send(req *Request) (resp *http.Response, err os.Error) {
 	if req.Request.URL, err = http.ParseURL(req.Request.RawURL); err != nil {
 		return
 	}

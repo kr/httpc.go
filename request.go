@@ -10,7 +10,7 @@ type Request struct {
 	http.Request
 	Pri int
 
-	success chan *Response
+	success chan *http.Response
 	failure chan os.Error
 }
 
