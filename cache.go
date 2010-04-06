@@ -49,7 +49,7 @@ var ignoreHeaders = map[string]bool {
 	"Transfer-Encoding": true,
 }
 
-func (c cache) updateStore(key string, body []byte, req *Request, resp *http.Response) {
+func (c cache) updateStore(key string, body []byte, req *http.Request, resp *http.Response) {
 	if key == "" {
 		return
 	}
@@ -66,7 +66,7 @@ func (c cache) updateStore(key string, body []byte, req *Request, resp *http.Res
 	c.store.Set(key, info, body)
 }
 
-func (c cache) sendAndUpdate(req *Request, key string) (*http.Response, os.Error) {
+func (c cache) sendAndUpdate(req *http.Request, key string) (*http.Response, os.Error) {
 	resp, err := c.next.Send(req)
 	if err != nil {
 		return resp, err
@@ -85,8 +85,8 @@ func valueOrDefault(value, def string) string {
 	return value
 }
 
-func (c cache) Send(req *Request) (resp *http.Response, err os.Error) {
-	method := valueOrDefault(req.Request.Method, "GET")
+func (c cache) Send(req *http.Request) (resp *http.Response, err os.Error) {
+	method := valueOrDefault(req.Method, "GET")
 	key := NormURL(req.RawURL)
 	info, content := c.store.Get(key)
 	if info != nil {

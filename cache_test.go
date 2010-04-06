@@ -68,7 +68,7 @@ func init() {
 type dummySender struct {
 }
 
-func (ds *dummySender) Send(req *Request) (*http.Response, os.Error) {
+func (ds *dummySender) Send(req *http.Request) (*http.Response, os.Error) {
 	if req.Header == nil {
 		req.Header = map[string]string{}
 	}
@@ -95,14 +95,14 @@ func TestGetOnlyIfCachedCacheHit(tt *testing.T) {
 	mc := NewMemoryStore(10000000)
 	s := NewCache(mc, &dummySender{})
 	url := "http://localhost/304/test_etag.txt"
-	resp, err := s.Send(&Request{Request:http.Request{RawURL:url}}) // Put it in the cache
+	resp, err := s.Send(&http.Request{RawURL:url}) // Put it in the cache
 	t.noErr(err)
 	if resp == nil {
 		tt.Fatal("got nil resp")
 	}
 	t.assertEQ(resp.GetHeader("Via"), "", "Via")
 	resp.Body.Close()
-	resp, err = s.Send(&Request{Request:http.Request{RawURL:url, Header:map[string]string{"Cache-Control":"Only-If-Cached"}}})
+	resp, err = s.Send(&http.Request{RawURL:url, Header:map[string]string{"Cache-Control":"Only-If-Cached"}})
 	t.noErr(err)
 	if resp == nil {
 		tt.Fatal("got nil resp")

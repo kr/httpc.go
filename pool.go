@@ -6,12 +6,13 @@ import (
 	"http"
 	"io"
 	"os"
+	"strconv"
 )
 
 // A connection pool for one domain+port.
 type pool struct {
 	addr    string
-	reqs    chan *Request
+	reqs    chan *clientRequest
 	execute chan bool
 	wantPri int
 	conns   chan *http.ClientConn
@@ -23,7 +24,7 @@ type pool struct {
 	active  int
 }
 
-func (p *pool) exec(r *Request) (resp *http.Response, err os.Error) {
+func (p *pool) exec(r *http.Request) (resp *http.Response, err os.Error) {
 	conns := p.conns
 	for {
 		conn := <-conns
@@ -35,7 +36,7 @@ func (p *pool) exec(r *Request) (resp *http.Response, err os.Error) {
 			}
 		}
 
-		err = conn.Write(&r.Request)
+		err = conn.Write(r)
 		if err != nil {
 			conn.Close()
 			conns <- nil
@@ -76,15 +77,15 @@ func (p *pool) exec(r *Request) (resp *http.Response, err os.Error) {
 	panic("can not happen")
 }
 
-func (p *pool) hookup(r *Request, decReq chan<- *pool) {
+func (p *pool) hookup(cr *clientRequest, decReq chan<- *pool) {
 	defer func() { decReq <- p }()
 
-	resp, err := p.exec(r)
+	resp, err := p.exec(cr.r)
 	if err != nil {
-		r.failure <- err
+		cr.failure <- err
 		return
 	}
-	r.success <- resp
+	cr.success <- resp
 }
 
 func (p *pool) accept(incReq, decReq chan<- *pool) {
@@ -94,11 +95,15 @@ func (p *pool) accept(incReq, decReq chan<- *pool) {
 		select {
 		case r := <-p.reqs:
 			heap.Push(q, r)
-			p.wantPri = q.At(0).(*Request).Pri
+			pri, err := strconv.Atoi(GetHeader(q.At(0).(*clientRequest).r, "X-Pri"))
+			if err != nil {
+				pri = DefaultPri
+			}
+			p.wantPri = pri
 			incReq <- p
 		case <-p.execute:
-			r := heap.Pop(q).(*Request)
-			go p.hookup(r, decReq)
+			cr := heap.Pop(q).(*clientRequest)
+			go p.hookup(cr, decReq)
 		}
 	}
 }
@@ -107,7 +112,7 @@ func newPool(addr string, limit int, incReq, decReq chan<- *pool) *pool {
 	p := &pool{
 		addr:    addr,
 		pos:     -1,
-		reqs:    make(chan *Request),
+		reqs:    make(chan *clientRequest),
 		execute: make(chan bool),
 	}
 
@@ -168,3 +173,10 @@ func (q *poolQueue) Swap(i, j int) {
 	q.Vector.Swap(i, j)
 	q.Vector.At(i).(*pool).pos, q.Vector.At(j).(*pool).pos = i, j
 }
+
+type requestQueue struct {
+	vector.Vector
+}
+
+func (q requestQueue) Less(i, j int) bool { return i < j }
+

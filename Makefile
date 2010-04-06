@@ -7,7 +7,6 @@ GOFILES=\
 	client.go\
 	conn.go\
 	pool.go\
-	request.go\
 	store_file.go\
 	store_memory.go\
 

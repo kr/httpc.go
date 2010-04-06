@@ -20,11 +20,12 @@ import (
 	"http"
 	"io"
 	"os"
+	"strconv"
 )
 
 // This interface is for sending HTTP requests.
 type Sender interface {
-	Send(*Request) (*http.Response, os.Error)
+	Send(*http.Request) (*http.Response, os.Error)
 }
 
 const (
@@ -50,6 +51,21 @@ func prepend(r *http.Response, rs []*http.Response) []*http.Response {
 	return nrs
 }
 
+func AddHeader(r *http.Request, key, value string) {
+	key = http.CanonicalHeaderKey(key)
+
+    oldValues, oldValuesPresent := r.Header[key]
+    if oldValuesPresent {
+        r.Header[key] = oldValues + "," + value
+    } else {
+        r.Header[key] = value
+    }
+}
+
+func GetHeader(r *http.Request, key string) (value string) {
+    return r.Header[http.CanonicalHeaderKey(key)]
+}
+
 // Much like http.Get. If s is nil, uses DefaultSender.
 func Get(s Sender, url string) (rs []*http.Response, err os.Error) {
 	if s == nil {
@@ -62,11 +78,10 @@ func Get(s Sender, url string) (rs []*http.Response, err os.Error) {
 			break
 		}
 
-		var req Request
-		req.success = make(chan *http.Response)
-		req.failure = make(chan os.Error)
-		req.Request.RawURL = url
-		req.Pri = DefaultPri
+		var req http.Request
+		req.RawURL = url
+		req.Header = map[string]string{}
+		AddHeader(&req, "X-Pri", strconv.Itoa(DefaultPri))
 		r, err := s.Send(&req)
 		if err != nil {
 			break

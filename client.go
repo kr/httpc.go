@@ -11,8 +11,14 @@ import (
 type Client struct {
 	LimitGlobal    int
 	LimitPerDomain int
-	reqs           chan *Request
+	reqs           chan *clientRequest
 	poolGetter     chan poolPromise
+}
+
+type clientRequest struct {
+	r *http.Request
+	success chan *http.Response
+	failure chan os.Error
 }
 
 type poolPromise struct {
@@ -42,7 +48,7 @@ func (c *Client) managePools(poolMaker func(string) *pool) {
 func (c *Client) accept() {
 	for {
 		r := <-c.reqs
-		d := r.Request.URL.Host
+		d := r.r.URL.Host
 		p := c.getPool(d)
 		p.reqs <- r
 	}
@@ -87,7 +93,7 @@ func (c *Client) drive(incReq, decReq chan *pool) {
 }
 
 func NewClient() *Client {
-	c := &Client{DefaultLimitGlobal, DefaultLimitPerDomain, make(chan *Request), make(chan poolPromise)}
+	c := &Client{DefaultLimitGlobal, DefaultLimitPerDomain, make(chan *clientRequest), make(chan poolPromise)}
 	incReq := make(chan *pool)
 	decReq := make(chan *pool)
 	go c.managePools(func(addr string) *pool { return newPool(addr, c.LimitPerDomain, incReq, decReq) })
@@ -101,17 +107,18 @@ func (c *Client) SetLimit(domain string, limit int) {
 	c.getPool(domain).setLimit(limit)
 }
 
-func (c *Client) Send(req *Request) (resp *http.Response, err os.Error) {
-	if req.Request.URL, err = http.ParseURL(req.Request.RawURL); err != nil {
+func (c *Client) Send(req *http.Request) (resp *http.Response, err os.Error) {
+	if req.URL, err = http.ParseURL(req.RawURL); err != nil {
 		return
 	}
-	if req.Request.URL.Scheme != "http" {
-		return nil, os.ErrorString(fmt.Sprintf("bad scheme %s", req.Request.URL.Scheme))
+	if req.URL.Scheme != "http" {
+		return nil, os.ErrorString(fmt.Sprintf("bad scheme %s", req.URL.Scheme))
 	}
-	c.reqs <- req
+	cr := &clientRequest{req, make(chan *http.Response), make(chan os.Error)}
+	c.reqs <- cr
 	select {
-	case resp = <-req.success:
-	case err = <-req.failure:
+	case resp = <-cr.success:
+	case err = <-cr.failure:
 	}
 	return
 }
