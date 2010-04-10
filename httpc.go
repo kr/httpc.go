@@ -28,21 +28,10 @@ type Sender interface {
 	Send(*http.Request) (*http.Response, os.Error)
 }
 
-const (
-	DefaultLimitGlobal    = 40
-	DefaultLimitPerDomain = 6
-)
-
 // Used for requests made by Get, Put, Post, PostParams, and Delete.
 const DefaultPri = 5000
 
-const DefaultMemoryStoreSize = 50000000 // 50MB
-
-var (
-	DefaultClient = NewClient(DefaultLimitGlobal, DefaultLimitPerDomain)
-	DefaultStore = NewMemoryStore(DefaultMemoryStoreSize)
-	DefaultSender = NewCache(DefaultStore, DefaultClient)
-)
+var DefaultSender = NewCache(NewMemoryStore(50000000), NewClient(40, 6))
 
 func prepend(r *http.Response, rs []*http.Response) []*http.Response {
 	nrs := make([]*http.Response, len(rs) + 1)
