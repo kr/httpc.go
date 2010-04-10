@@ -20,16 +20,12 @@ import (
 	"http"
 	"io"
 	"os"
-	"strconv"
 )
 
 // This interface is for sending HTTP requests.
 type Sender interface {
 	Send(*http.Request) (*http.Response, os.Error)
 }
-
-// Used for requests made by Get, Put, Post, PostParams, and Delete.
-const DefaultPri = 5000
 
 var DefaultSender = NewCache(NewMemoryStore(50000000), NewClient(40, 6))
 
@@ -67,7 +63,6 @@ func Get(s Sender, url string) (rs []*http.Response, err os.Error) {
 		var req http.Request
 		req.RawURL = url
 		req.Header = map[string]string{}
-		req.Header["X-Pri"] = strconv.Itoa(DefaultPri)
 		r, err := Send(s, &req)
 		if err != nil {
 			break

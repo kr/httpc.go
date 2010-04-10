@@ -9,6 +9,10 @@ import (
 	"strconv"
 )
 
+// Used for requests without an explicit priority or if the priority is not an
+// integer.
+const defaultPri = 5000
+
 // A connection pool for one domain+port.
 type pool struct {
 	addr    string
@@ -95,9 +99,9 @@ func (p *pool) accept(incReq, decReq chan<- *pool) {
 		select {
 		case r := <-p.reqs:
 			heap.Push(q, r)
-			pri, err := strconv.Atoi(getHeader(q.At(0).(*clientRequest).r, "X-Pri"))
+			pri, err := strconv.Atoi(valueOrDefault(getHeader(q.At(0).(*clientRequest).r, "X-Pri"), ""))
 			if err != nil {
-				pri = DefaultPri
+				pri = defaultPri
 			}
 			p.wantPri = pri
 			incReq <- p

@@ -92,6 +92,15 @@ func (c *client) drive(incReq, decReq chan *pool) {
 	}
 }
 
+// A client sends http requests over the wire. It makes connections as
+// necessary.
+// 
+// If the global or per-domain connection limit has been hit, causing requests
+// to queue up, the waiting requests will be sent in order of priority (first
+// low, then high). The default priority is 5000. The priority for a request
+// can be set with the X-Pri header:
+//   X-Pri: 2000
+// sets the priority of the request to 2000. 
 func NewClient(limitGlobal, limitPerDomain int) Sender {
 	c := &client{limitGlobal, limitPerDomain, make(chan *clientRequest), make(chan poolPromise)}
 	incReq := make(chan *pool)
