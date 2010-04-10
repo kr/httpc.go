@@ -51,27 +51,24 @@ func prepend(r *http.Response, rs []*http.Response) []*http.Response {
 	return nrs
 }
 
-func AddHeader(r *http.Request, key, value string) {
-	key = http.CanonicalHeaderKey(key)
-
-    oldValues, oldValuesPresent := r.Header[key]
-    if oldValuesPresent {
-        r.Header[key] = oldValues + "," + value
-    } else {
-        r.Header[key] = value
-    }
+func getHeader(r *http.Request, key string) (value string) {
+    return r.Header[http.CanonicalHeaderKey(key)]
 }
 
-func GetHeader(r *http.Request, key string) (value string) {
-    return r.Header[http.CanonicalHeaderKey(key)]
+func Send(s Sender, req *http.Request) (resp *http.Response, err os.Error) {
+	if s == nil {
+		s = DefaultSender
+	}
+	header := req.Header
+	req.Header = map[string]string{}
+	for k, v := range header {
+		req.Header[http.CanonicalHeaderKey(k)] = v
+	}
+	return s.Send(req)
 }
 
 // Much like http.Get. If s is nil, uses DefaultSender.
 func Get(s Sender, url string) (rs []*http.Response, err os.Error) {
-	if s == nil {
-		s = DefaultSender
-	}
-
 	for redirect := 0; ; redirect++ {
 		if redirect >= 10 {
 			err = os.ErrorString("stopped after 10 redirects")
@@ -81,8 +78,8 @@ func Get(s Sender, url string) (rs []*http.Response, err os.Error) {
 		var req http.Request
 		req.RawURL = url
 		req.Header = map[string]string{}
-		AddHeader(&req, "X-Pri", strconv.Itoa(DefaultPri))
-		r, err := s.Send(&req)
+		req.Header["X-Pri"] = strconv.Itoa(DefaultPri)
+		r, err := Send(s, &req)
 		if err != nil {
 			break
 		}
