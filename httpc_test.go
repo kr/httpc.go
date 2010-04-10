@@ -30,7 +30,7 @@ func init() {
 }
 
 func TestGet(t *testing.T) {
-	c := NewClient()
+	c := NewClient(10, 10)
 	if c == nil {
 		t.Fatal("nil conn")
 	}

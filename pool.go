@@ -116,19 +116,14 @@ func newPool(addr string, limit int, incReq, decReq chan<- *pool) *pool {
 		execute: make(chan bool),
 	}
 
-	p.setLimit(limit)
+	p.conns = make(chan *http.ClientConn, limit)
+	for i := 0; i < limit; i++ {
+		p.conns <- nil
+	}
 
 	go p.accept(incReq, decReq)
 
 	return p
-}
-
-func (p *pool) setLimit(limit int) {
-	conns := make(chan *http.ClientConn, limit)
-	for i := 0; i < limit; i++ {
-		conns <- nil
-	}
-	p.conns = conns
 }
 
 func (p *pool) Ready() bool { return false }

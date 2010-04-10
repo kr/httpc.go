@@ -9,8 +9,8 @@ import (
 
 // Manages connection pools for all domains.
 type Client struct {
-	LimitGlobal    int
-	LimitPerDomain int
+	limitGlobal    int
+	limitPerDomain int
 	reqs           chan *clientRequest
 	poolGetter     chan poolPromise
 }
@@ -79,7 +79,7 @@ func (c *Client) drive(incReq, decReq chan *pool) {
 			heap.Push(q, p)
 		}
 
-		for active < c.LimitGlobal && q.Len() > 0 {
+		for active < c.limitGlobal && q.Len() > 0 {
 			p = heap.Pop(q).(*pool)
 			p.pending--
 			p.active++
@@ -92,19 +92,14 @@ func (c *Client) drive(incReq, decReq chan *pool) {
 	}
 }
 
-func NewClient() *Client {
-	c := &Client{DefaultLimitGlobal, DefaultLimitPerDomain, make(chan *clientRequest), make(chan poolPromise)}
+func NewClient(limitGlobal, limitPerDomain int) *Client {
+	c := &Client{limitGlobal, limitPerDomain, make(chan *clientRequest), make(chan poolPromise)}
 	incReq := make(chan *pool)
 	decReq := make(chan *pool)
-	go c.managePools(func(addr string) *pool { return newPool(addr, c.LimitPerDomain, incReq, decReq) })
+	go c.managePools(func(addr string) *pool { return newPool(addr, c.limitPerDomain, incReq, decReq) })
 	go c.accept()
 	go c.drive(incReq, decReq)
 	return c
-}
-
-// Set domain's limit for open connections.
-func (c *Client) SetLimit(domain string, limit int) {
-	c.getPool(domain).setLimit(limit)
 }
 
 func (c *Client) Send(req *http.Request) (resp *http.Response, err os.Error) {

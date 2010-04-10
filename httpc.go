@@ -39,7 +39,7 @@ const DefaultPri = 5000
 const DefaultMemoryStoreSize = 50000000 // 50MB
 
 var (
-	DefaultClient = NewClient()
+	DefaultClient = NewClient(DefaultLimitGlobal, DefaultLimitPerDomain)
 	DefaultStore = NewMemoryStore(DefaultMemoryStoreSize)
 	DefaultSender = NewCache(DefaultStore, DefaultClient)
 )
