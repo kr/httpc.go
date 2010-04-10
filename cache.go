@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	FRESH = iota
-	STALE
+	fresh = iota
+	stale
 )
 
 func NormURL(url string) string {
@@ -91,7 +91,7 @@ func (c cache) Send(req *http.Request) (resp *http.Response, err os.Error) {
 	info, content := c.store.Get(key)
 	if info != nil {
 		state := state(info, req.Header)
-		if state == FRESH {
+		if state == fresh {
 			response := cacheResponse(info)
 			response.Body = content
 			response.AddHeader("Via", "1.1 internal (httpc.go)")
@@ -108,7 +108,7 @@ func (c cache) Send(req *http.Request) (resp *http.Response, err os.Error) {
 			return response, nil
 		}
 
-		if state == STALE {
+		if state == stale {
 			// TODO modify request headers
 			return nil, os.NewError("not implemented")
 		}
@@ -139,7 +139,7 @@ func cacheResponse(info map[string]string) *http.Response {
 }
 
 func state(info, header map[string]string) int {
-	return FRESH
+	return fresh
 }
 
 type tee struct {
