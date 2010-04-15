@@ -39,7 +39,7 @@ func TestGet(t *testing.T) {
 		t.Error("unexpedted err", err)
 	}
 	if resp == nil {
-		t.Error("nil resp")
+		t.Fatal("nil resp")
 	}
 	s, err := ioutil.ReadAll(resp[0].Body)
 	if err != nil {
