@@ -88,7 +88,7 @@ func Post(s Sender, url string, bodyType string, body io.Reader) (r *http.Respon
 	return
 }
 
-func PostParams(s Sender, url string, params map[string]string) (r *http.Response, err os.Error) {
+func PostForm(s Sender, url string, form [][2]string) (r *http.Response, err os.Error) {
 	return
 }
 
