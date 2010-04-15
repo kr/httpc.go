@@ -44,6 +44,8 @@ func Send(s Sender, req *http.Request) (resp *http.Response, err os.Error) {
 	if s == nil {
 		s = DefaultSender
 	}
+	req.ProtoMajor = 1
+	req.ProtoMinor = 1
 	header := req.Header
 	req.Header = map[string]string{}
 	for k, v := range header {
@@ -85,7 +87,15 @@ func Get(s Sender, url string) (rs []*http.Response, err os.Error) {
 }
 
 func Post(s Sender, url string, bodyType string, body io.Reader) (r *http.Response, err os.Error) {
-	return
+	var req http.Request
+	req.Method = "POST"
+	req.RawURL = url
+	req.Body = nopCloser{body}
+	req.Header = map[string]string {
+		"Content-Type": bodyType,
+	}
+	req.TransferEncoding = []string{"chunked"}
+	return Send(s, &req)
 }
 
 func PostForm(s Sender, url string, form [][2]string) (r *http.Response, err os.Error) {
@@ -99,3 +109,9 @@ func Put(s Sender, url string, bodyType string, body io.Reader) (r *http.Respons
 func Delete(s Sender, url string) (r *http.Response, err os.Error) {
 	return
 }
+
+type nopCloser struct {
+	io.Reader
+}
+
+func (nopCloser) Close() os.Error { return nil }

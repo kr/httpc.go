@@ -1,6 +1,7 @@
 package httpc
 
 import (
+	"bytes"
 	"http"
 	"io"
 	"io/ioutil"
@@ -14,10 +15,16 @@ func (s HandlerString) ServeHTTP(c *http.Conn, r *http.Request) {
 	io.WriteString(c, string(s))
 }
 
+func echo(c *http.Conn, r *http.Request) {
+	c.SetHeader("Content-Type", r.Header["Content-Type"])
+	io.Copy(c, r.Body)
+}
+
 const port = "12345"
 
 func init() {
 	http.Handle("/", HandlerString("hello"))
+	http.HandleFunc("/echo", echo)
 	go func() {
 		l, e := net.Listen("tcp", ":"+port)
 		if e != nil {
@@ -47,6 +54,32 @@ func TestGet(t *testing.T) {
 	}
 	if string(s) != "hello" {
 		t.Errorf("expected hello, got %q\n", s)
+	}
+	//resp.Body.Close()
+}
+
+func TestPost(t *testing.T) {
+	ctype, exp := "text/plain", "abc"
+	c := NewClient(10, 10)
+	if c == nil {
+		t.Fatal("nil conn")
+	}
+	resp, err := Post(c, "http://localhost:"+port+"/echo", ctype, bytes.NewBufferString(exp))
+	if err != nil {
+		t.Error("unexpedted err", err)
+	}
+	if resp == nil {
+		t.Fatal("nil resp")
+	}
+	if s := resp.GetHeader("Content-Type"); s != ctype {
+		t.Errorf("wrong content type %q", s)
+	}
+	got, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Error("unexpedted err", err)
+	}
+	if string(got) != exp {
+		t.Errorf("expected %q, got %q\n", exp, got)
 	}
 	//resp.Body.Close()
 }
