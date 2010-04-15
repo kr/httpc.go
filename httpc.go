@@ -30,14 +30,14 @@ type Sender interface {
 var DefaultSender = NewCache(NewMemoryStore(50000000), NewClient(40, 6))
 
 func prepend(r *http.Response, rs []*http.Response) []*http.Response {
-	nrs := make([]*http.Response, len(rs) + 1)
+	nrs := make([]*http.Response, len(rs)+1)
 	nrs[0] = r
 	copy(nrs[1:], rs)
 	return nrs
 }
 
 func getHeader(r *http.Request, key string) (value string) {
-    return r.Header[http.CanonicalHeaderKey(key)]
+	return r.Header[http.CanonicalHeaderKey(key)]
 }
 
 func Send(s Sender, req *http.Request) (resp *http.Response, err os.Error) {
