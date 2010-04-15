@@ -14,7 +14,7 @@ const (
 	stale
 )
 
-func NormURL(url string) string {
+func normURL(url string) string {
 	u, err := http.ParseURL(url)
 	if err != nil {
 		return url // This is a cheap hack
@@ -87,7 +87,7 @@ func valueOrDefault(value, def string) string {
 
 func (c cache) Send(req *http.Request) (resp *http.Response, err os.Error) {
 	method := valueOrDefault(req.Method, "GET")
-	key := NormURL(req.RawURL)
+	key := normURL(req.RawURL)
 	info, content := c.store.Get(key)
 	if info != nil {
 		state := state(info, req.Header)

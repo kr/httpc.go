@@ -36,14 +36,14 @@ func (t *T) noErr(err os.Error) {
 
 func TestUrlNorm(tt *testing.T) {
  t := (*T)(tt)
-	t.assertEQ("http://example.org/", NormURL("http://example.org"), "")
-	t.assertEQ("http://example.org/", NormURL("http://EXAMple.org"), "")
-	t.assertEQ("http://example.org/?=b", NormURL("http://EXAMple.org?=b"), "")
-	t.assertEQ("http://example.org/mypath?a=b", NormURL("http://EXAMple.org/mypath?a=b"), "")
-	t.assertEQ("http://localhost:80/", NormURL("http://localhost:80"), "")
-	t.assertEQ("http://localhost:80/", NormURL("HTTP://LOCALHOST:80"), "")
-	t.assertEQ("/", NormURL("/"), "")
-	t.assertEQ(NormURL("http://www"), NormURL("http://WWW"), "")
+	t.assertEQ("http://example.org/", normURL("http://example.org"), "")
+	t.assertEQ("http://example.org/", normURL("http://EXAMple.org"), "")
+	t.assertEQ("http://example.org/?=b", normURL("http://EXAMple.org?=b"), "")
+	t.assertEQ("http://example.org/mypath?a=b", normURL("http://EXAMple.org/mypath?a=b"), "")
+	t.assertEQ("http://localhost:80/", normURL("http://localhost:80"), "")
+	t.assertEQ("http://localhost:80/", normURL("HTTP://LOCALHOST:80"), "")
+	t.assertEQ("/", normURL("/"), "")
+	t.assertEQ(normURL("http://www"), normURL("http://WWW"), "")
 }
 
 var testEtags = make(map[string]*http.Response)
