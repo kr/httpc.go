@@ -83,3 +83,30 @@ func TestPost(t *testing.T) {
 	}
 	//resp.Body.Close()
 }
+
+func TestPut(t *testing.T) {
+	ctype, exp := "text/plain", "abc"
+	c := NewClient(10, 10)
+	if c == nil {
+		t.Fatal("nil conn")
+	}
+	resp, err := Put(c, "http://localhost:"+port+"/echo", ctype, bytes.NewBufferString(exp))
+	if err != nil {
+		t.Error("unexpedted err", err)
+	}
+	if resp == nil {
+		t.Fatal("nil resp")
+	}
+	if s := resp.GetHeader("Content-Type"); s != ctype {
+		t.Errorf("wrong content type %q", s)
+	}
+	got, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Error("unexpedted err", err)
+	}
+	if string(got) != exp {
+		t.Errorf("expected %q, got %q\n", exp, got)
+	}
+	//resp.Body.Close()
+}
+

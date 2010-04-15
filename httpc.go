@@ -86,9 +86,9 @@ func Get(s Sender, url string) (rs []*http.Response, err os.Error) {
 	return
 }
 
-func Post(s Sender, url string, bodyType string, body io.Reader) (r *http.Response, err os.Error) {
+func sendBody(s Sender, url, method, bodyType string, body io.Reader) (r *http.Response, err os.Error) {
 	var req http.Request
-	req.Method = "POST"
+	req.Method = method
 	req.RawURL = url
 	req.Body = nopCloser{body}
 	req.Header = map[string]string {
@@ -98,11 +98,15 @@ func Post(s Sender, url string, bodyType string, body io.Reader) (r *http.Respon
 	return Send(s, &req)
 }
 
-func PostForm(s Sender, url string, form [][2]string) (r *http.Response, err os.Error) {
-	return
+func Put(s Sender, url string, bodyType string, body io.Reader) (r *http.Response, err os.Error) {
+	return sendBody(s, url, "PUT", bodyType, body)
 }
 
-func Put(s Sender, url string, bodyType string, body io.Reader) (r *http.Response, err os.Error) {
+func Post(s Sender, url string, bodyType string, body io.Reader) (r *http.Response, err os.Error) {
+	return sendBody(s, url, "POST", bodyType, body)
+}
+
+func PostForm(s Sender, url string, form [][2]string) (r *http.Response, err os.Error) {
 	return
 }
 
