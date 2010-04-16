@@ -31,7 +31,7 @@ func normURL(url string) string {
 // in question never existed.
 type Store interface {
 	Set(key string, info map[string]string, content []byte)
-	Get(key string) (map[string]string, io.ReadCloser)
+	Get(key string) (info map[string]string, content io.ReadCloser)
 	Delete(key string)
 }
 
@@ -40,6 +40,8 @@ type cache struct {
     next Sender
 }
 
+// A Cache forwards requests to the next Sender and caches responses in its
+// Store according to the rules of HTTP.
 func NewCache(store Store, next Sender) Sender {
 	return cache{store, next}
 }
