@@ -99,11 +99,7 @@ func (p *pool) accept(incReq, decReq chan<- *pool) {
 		select {
 		case r := <-p.reqs:
 			heap.Push(q, r)
-			pri, err := strconv.Atoi(valueOrDefault(getHeader(q.At(0).(*clientRequest).r, "X-Pri"), ""))
-			if err != nil {
-				pri = defaultPri
-			}
-			p.wantPri = pri
+			p.wantPri = q.PriAt(0)
 			incReq <- p
 		case <-p.execute:
 			cr := heap.Pop(q).(*clientRequest)
@@ -177,5 +173,14 @@ type requestQueue struct {
 	vector.Vector
 }
 
-func (q requestQueue) Less(i, j int) bool { return i < j }
+func (q requestQueue) Less(i, j int) bool {
+	return q.PriAt(i) < q.PriAt(j)
+}
 
+func (q requestQueue) PriAt(i int) int {
+	p, err := strconv.Atoi(q.At(i).(*clientRequest).r.Header["X-Pri"])
+	if err != nil {
+		return defaultPri
+	}
+	return p
+}
